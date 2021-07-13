@@ -3,10 +3,18 @@ Simple RAFT implementation using python sockets
 
 # Usage
 
+### Installation
+
+```
+git clone git@github.com:shrinivdeshmukh/simpleRAFT.git
+cd simpleRAFT
+pip install -r requirements.txt
+```
+
 ### Start the Nodes
 
 ```
-cd simpleRAFT
+cd raft
 python node.py <THIS NODE ADDRESS> <OTHER_NODE_ADDR_1>,<OTHER_NODE_ADDR_2>,<OTHER_NODE_ADDR_3>,<OTHER_NODE_ADDR_N>
 ```
 Do this on all the other nodes
@@ -14,13 +22,13 @@ Do this on all the other nodes
 example:
 For Node1:
 ```
-cd simpleRAFT
+cd raft
 python node.py 192.168.1.102:5000 192.168.1.102:5001,192.168.1.103:5002.192.168.1.104:5003  # NO SPACES AFTER EACH COMMA
 ```
 
 For Node2:
 ```
-cd simpleRAFT
+cd raft
 python node.py 192.168.1.102:5000 192.168.1.101:5000,192.168.1.103:5002.192.168.1.104:5003  # NO SPACES AFTER EACH COMMA
 ```
 
@@ -30,6 +38,7 @@ Repeat this on all the nodes
 
 * Start the web server
 ```
+cd simpleRAFT
 python server.py <ANY_ADDRESS_FROM_THE_ABOVE_SERVERS>
 ```
 
