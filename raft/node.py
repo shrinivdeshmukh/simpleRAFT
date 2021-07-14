@@ -71,7 +71,7 @@ class Node(Transport):
             return False, self.term
 
     def start_heartbeat(self):
-        print("STARTING HEARTBEAT")
+        print("starting heartbeat")
         if self.staged:
             self.handle_put(self.staged)
 
@@ -82,7 +82,7 @@ class Node(Transport):
         if self.log:
             self.update_follower_commitid(peer)
 
-        message = {'term': self.term, 'addr': f'{self.host}:{self.port}'}
+        message = msg_in.send_heartbeat(self.term, self.addr)
         while self.status == cfg.LEADER:
             start = time.time()
             reply = self.heartbeat_transport(peer, message)
@@ -96,14 +96,9 @@ class Node(Transport):
             time.sleep((cfg.HB_TIME - delta) / 1000)
 
     def update_follower_commitid(self, peer):
-        first_message = {"term": self.term, "addr": f'{self.host}:{self.port}'}
-        second_message = {
-            "term": self.term,
-            "addr": f'{self.host}:{self.port}',
-            "action": "commit",
-            "payload": self.log[-1]
-        }
-        reply = self.heartbeat_transport(peer, message)
+        message = msg_in.update_follower_commitid(self.term, self.addr, 'commit', self.log[-1])
+        first_message = {x: message[x] for x in message if x in ['term', 'addr']}
+        reply = self.heartbeat_transport(peer, first_message)
         if reply and reply[peer]['commit_id'] < self.commit_id:
             reply = self.heartbeat_transport(peer, message)
 
@@ -158,13 +153,7 @@ class Node(Transport):
         self.lock.acquire()
         self.staged = payload
         waited = 0
-        log_message = {
-            "term": self.term,
-            "addr": self.addr,
-            "payload": payload,
-            "action": "log",
-            "commit_id": self.commit_id
-        }
+        log_message = msg_in.handle_put(self.term, self.addr, payload, 'log', self.commit_id)
 
         # spread log  to everyone
         log_confirmations = [False] * len(self.peers)
@@ -177,13 +166,7 @@ class Node(Transport):
                 print(f"waited {cfg.MAX_LOG_WAIT} ms, update rejected:")
                 self.lock.release()
                 return False
-        commit_message = {
-            "term": self.term,
-            "addr": self.addr,
-            "payload": payload,
-            "action": "commit",
-            "commit_id": self.commit_id
-        }
+        commit_message = msg_in.handle_put(self.term, self.addr, payload, 'commit', self.commit_id)
         self.commit()
         threading.Thread(target=self.spread_update,
                          args=(commit_message, None, self.lock)).start()

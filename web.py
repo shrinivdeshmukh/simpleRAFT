@@ -30,7 +30,7 @@ async def put_data(key: str):
     s.send(encode_json(message))
     response = s.recv(1024).decode('utf-8')
     s.close()
-    return response
+    return decode_json(response)
 
 def encode_json(message):
     message = bytes(dumps(message), encoding='utf-8')

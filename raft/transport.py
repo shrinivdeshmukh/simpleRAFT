@@ -29,7 +29,6 @@ class Transport:
             data = self.decode_msg(data)
             if isinstance(data, dict):
                 if data['type'] == 'vote_request':
-                    print("ASKING PEERS TO VOTE")
                     term = data['term']
                     commit_id = data['commit_id']
                     staged = data['staged']
@@ -43,8 +42,8 @@ class Transport:
                         reply = self.redirect_to_leader(self.encode_msg(data))
                         client.send(self.encode_msg(reply))
                     else:    
-                        self.handle_put({x: data[x] for x in data if x not in ['type']})
-                        client.send(self.encode_msg({'type': 'put_response', 'success': True}))
+                        put_response = self.handle_put({x: data[x] for x in data if x not in ['type']})
+                        client.send(self.encode_msg({'type': 'put_response', 'success': put_response}))
                 elif data['type'] == 'get':
                     if not self.status == cfg.LEADER:
                         reply = self.redirect_to_leader(self.encode_msg(data))
@@ -56,7 +55,6 @@ class Transport:
                 print(f'echoing {data} to {client}')
                 client.send(bytes(data, encoding=self.__CODER))
         else:
-            print('closing', client)
             self.selector.unregister(client)
             client.close()
 
@@ -84,7 +82,6 @@ class Transport:
         conn = self.retry(address)
         conn.send(bytes(f'PEER ADDRESS: {self.host}:{self.port}', encoding=self.__CODER))
         msg = conn.recv(1024).decode('utf-8')
-        print(f'MESSAGE FROM SERVER: {msg}')
 
     def retry(self, address):
         host, port = address.split(':')
@@ -95,7 +92,7 @@ class Transport:
                 client.connect((host, int(port)))
                 return client
             except ConnectionRefusedError:
-                print(f'Reconnection attempt {i}')
+                print(f'Reconnection attempt {i} to peer {address}')
                 i += 1
                 sleep(2)
                 continue
