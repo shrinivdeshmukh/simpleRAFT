@@ -155,7 +155,6 @@ class Node(Transport):
         waited = 0
         log_message = msg_in.handle_put(self.term, self.addr, payload, 'log', self.commit_id)
 
-        # spread log  to everyone
         log_confirmations = [False] * len(self.peers)
         threading.Thread(target=self.spread_update,
                          args=(log_message, log_confirmations)).start()
