@@ -40,7 +40,7 @@ make docker-stop
 * Start
 
 ```
-make start
+make local
 ```
 
 * Logs
