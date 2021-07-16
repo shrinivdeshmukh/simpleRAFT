@@ -79,15 +79,17 @@ cd raft
 python main.py 192.168.1.102:5000 192.168.1.101:5000,192.168.1.103:5002.192.168.1.104:5003  # NO SPACES AFTER EACH COMMA
 ```
 
-**Please replace the IPs above with your nodes IPs**
 Repeat this on all the nodes
+
+**Please replace the IPs above with your nodes IPs**
+
 
 ### Put and Get Data
 
 * Start the web server
 ```
 cd simpleRAFT
-python server.py <ANY_ADDRESS_FROM_THE_ABOVE_SERVERS>
+python web.py <ANY_ADDRESS_FROM_THE_ABOVE_SERVERS>
 ```
 
 Go to http://localhost:8000/docs
