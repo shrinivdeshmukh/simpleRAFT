@@ -30,7 +30,7 @@ async def put_data(key: str):
     s.send(encode_json(message))
     response = s.recv(1024).decode('utf-8')
     s.close()
-    return decode_json(response)
+    return response
 
 def encode_json(message):
     message = bytes(dumps(message), encoding='utf-8')
@@ -40,4 +40,4 @@ def decode_json(message):
     return loads(message)
 
 if __name__ == '__main__':
-    uvicorn.run('web:app', port=8000)
+    uvicorn.run('web:app', host='0.0.0.0', port=8000)
