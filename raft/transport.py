@@ -7,7 +7,7 @@ import config as cfg
 
 class Transport:
 
-    def __init__(self, my_ip: str, timeout: int=30):
+    def __init__(self, my_ip: str, timeout: int=10):
         self.host, self.port = my_ip.split(':')
         self.port = int(self.port)
         self.addr = my_ip
@@ -100,18 +100,21 @@ class Transport:
                     self.peers.append(peer)
         self.peers = list(set(self.peers))
 
-    def add_peer(self, message):
+    def add_peer(self, message, leader = False):
         try:
             reciever_address = message['sender']
             new_peer = message['payload']
             if new_peer not in self.peers:
                 with self.lock:
                    self.peers.append(new_peer)
+            if self.election.status == cfg.LEADER:
+                self.election.start_heartbeat()
         except Exception as e:
             raise e
 
     def reconnect(self, addr: str):
-        while True:
+        i = 0
+        while i < 20:
             try:
                 host, port = addr.split(':')
                 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -119,9 +122,14 @@ class Transport:
                 return client
             except ConnectionRefusedError:
                 client.close()
+                time.sleep(2)
                 del client
             except Exception as e:
                 raise e
+            finally:
+                i += 1
+        else:
+            return False
 
     def ping(self, timeout: int=30):
         while True:
@@ -135,6 +143,10 @@ class Transport:
 
     def echo(self, peer):
         client = self.reconnect(peer)
+        if not client:
+            with self.lock:
+                self.peers.remove(peer)
+            return
         echo_msg = self.encode_json({'type': 'ping'})
         client.send(echo_msg)
         echo_reply = self.decode_json(client.recv(1024).decode('utf-8'))
@@ -156,6 +168,8 @@ class Transport:
 
     def vote_request(self, peer: str, message: dict=None):
         client = self.reconnect(peer)
+        if not client:
+            return 
         message.update({'type': 'vote_request'})
         vote_request_message = self.encode_json(message)
         client.send(vote_request_message)

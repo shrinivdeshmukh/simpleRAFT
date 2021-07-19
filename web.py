@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from socket import socket, AF_INET, SOCK_STREAM
 import uvicorn
 import sys
@@ -19,7 +19,10 @@ async def put_data(key: str, value: str):
     s.connect((host, port))
     s.send(encode_json(message))
     response = s.recv(1024).decode('utf-8')
+    response = decode_json(response)
     s.close()
+    if not response['success']:
+        raise HTTPException(500, detail='Couldnt put items')
     return response
 
 @app.get('/get/data')
@@ -28,8 +31,10 @@ async def put_data(key: str):
     s = socket(AF_INET, SOCK_STREAM)
     s.connect((host, port))
     s.send(encode_json(message))
-    response = s.recv(1024).decode('utf-8')
+    response = decode_json(s.recv(1024).decode('utf-8'))
     s.close()
+    if not response['data']:
+        raise HTTPException(500, detail='Couldnt put items')
     return response
 
 def encode_json(message):

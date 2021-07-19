@@ -40,6 +40,7 @@ class Election:
             vote_reply = self.__transport.vote_request(voter, message)
             if vote_reply:
                 choice = vote_reply['choice']
+                self.election_logger.info(f'CHOICE from {voter} is {choice}, type is {type(choice)}, msg is {vote_reply}')
                 if choice and self.status == cfg.CANDIDATE:
                     self.increment_vote()
                 elif not choice:
@@ -72,7 +73,7 @@ class Election:
 
     def send_heartbeat(self, peer: str):
         if self.store.log:
-            self.update_follower_commit
+            self.update_follower_commit(peer)
         message = {'term': self.term, 'addr': self.__transport.addr}
         while self.status == cfg.LEADER:
             start = time.time()
@@ -91,11 +92,14 @@ class Election:
             'term': self.term,
             'addr': self.__transport.addr,
             'action': 'commit',
-            'payload': self.store.log[-1]
         }
         reply = self.__transport.heartbeat(follower, first_message)
-        if reply and reply["commit_id"] < self.store.commit_id:
-            reply = self.__transport.heartbeat(follower, second_message)
+        i = -1
+        if reply:
+            while reply["commit_id"] < self.store.commit_id:
+                second_message.update({'payload': self.store.log[i]})
+                reply = self.__transport.heartbeat(follower, second_message)
+                i = i -1
 
     def heartbeat_handler(self, message: dict):
         term = message['term']
@@ -117,7 +121,8 @@ class Election:
         return self.term, self.store.commit_id
 
     def handle_put(self, payload):
-        return self.store.put(self.term, payload, self.__transport, self.majority)
+        reply = self.store.put(self.term, payload, self.__transport, self.majority)
+        return reply
 
     def handle_get(self, payload):
         return self.store.get(payload)

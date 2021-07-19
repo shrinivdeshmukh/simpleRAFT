@@ -5,7 +5,7 @@ import os
 class Logging:
     def __init__(self, log_level, filename):
         self.log_level = log_level
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger()
 
     def get_logger(self):
         logging.basicConfig(level=self.log_level,

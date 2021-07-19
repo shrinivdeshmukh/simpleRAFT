@@ -4,7 +4,7 @@ from threading import Thread
 
 class Node(Transport):
 
-    def __init__(self, my_ip: str, peers: list=None, timeout: int=30):
+    def __init__(self, my_ip: str, peers: list=None, timeout: int=10):
         self.__transport = Transport(my_ip, timeout=timeout)
         self.__election = Election(transport=self.__transport)
         self.__peers = peers
