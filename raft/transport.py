@@ -92,6 +92,8 @@ class Transport:
         if not message:
             message = {'type': 'echo', 'payload': 'whatsup?'}
         client = self.reconnect(addr)
+        if not client:
+            return
         client.send(self.encode_json(message))
         msg = client.recv(1024).decode('utf-8')
         client.close()
@@ -177,6 +179,8 @@ class Transport:
 
     def heartbeat(self, peer: str, message: dict = None):
         client = self.reconnect(peer)
+        if not client:
+            return
         message.update({'type': 'heartbeat'})
         heartbeat_message = self.encode_json(message)
         client.send(heartbeat_message)
@@ -197,6 +201,8 @@ class Transport:
 
     def send_data(self, peer=None, message: dict = None):
         client = self.reconnect(peer)
+        if not client:
+            return
         message.update({'type': 'data'})
         data_message = self.encode_json(message)
         client.send(data_message)
