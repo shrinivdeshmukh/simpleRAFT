@@ -130,3 +130,6 @@ dmypy.json
 
 # logs and pid
 raft/.data/
+raft/data/
+
+.vscode/
