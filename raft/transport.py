@@ -97,6 +97,9 @@ class Transport:
 
     def req_add_peer(self, addr: str):
         client = self.reconnect(addr)
+        if not client:
+            self.ping_logger.info(f'Could not connect to peer {addr}')
+            return
         message = self.encode_json({'type': 'add_peer', 'payload': self.addr})
         client.send(message)
         msg = client.recv(1024).decode('utf-8')
