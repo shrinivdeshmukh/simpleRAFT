@@ -8,7 +8,7 @@ import config as cfg
 
 class Transport:
 
-    def __init__(self, my_ip: str, timeout: int = 10):
+    def __init__(self, my_ip: str, timeout: int = 1):
         self.host, self.port = my_ip.split(':')
         self.port = int(self.port)
         self.addr = my_ip
@@ -132,7 +132,7 @@ class Transport:
                 return client
             except ConnectionRefusedError:
                 client.close()
-                time.sleep(2)
+                time.sleep(0.02)
                 del client
             except Exception as e:
                 raise e
@@ -141,14 +141,14 @@ class Transport:
         else:
             return False
 
-    def ping(self, timeout: int = 30):
+    def ping(self, timeout: int = 0.02):
         while True:
             if self.peers:
-                self.ping_logger.info(f'peers >>> {self.peers}')
+                self.ping_logger.debug(f'peers >>> {self.peers}')
                 for peer in self.peers:
                     Thread(target=self.echo, args=(peer,)).start()
             else:
-                self.ping_logger.info('ping  >>> no peers to ping')
+                self.ping_logger.debug('ping  >>> no peers to ping')
             time.sleep(timeout)
 
     def echo(self, peer):
@@ -162,7 +162,7 @@ class Transport:
         echo_reply = self.decode_json(client.recv(1024).decode('utf-8'))
         client.close()
         if echo_reply:
-            self.ping_logger.info('ping  >>> {}'.format(echo_reply))
+            self.ping_logger.debug('ping  >>> {}'.format(echo_reply))
             if echo_reply['is_alive']:
                 return True
         return False

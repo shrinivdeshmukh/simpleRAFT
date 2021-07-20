@@ -14,6 +14,7 @@ class Election:
         self.store = Store()
         self.election_logger = Logging('INFO', 'election.log').get_logger()
         self.__transport = transport
+        self.init_timeout()
 
     def start_election(self):
         self.election_logger.info('starting election')
@@ -21,7 +22,7 @@ class Election:
         self.vote_count = 0
         self.status = cfg.CANDIDATE
         self.peers = self.__transport.peers
-        self.majority = (2 + len(self.peers)) // 2
+        self.majority = ((1 + len(self.peers)) // 2) + 1
         self.init_timeout()
         self.increment_vote()
         self.ask_for_vote()
@@ -110,7 +111,7 @@ class Election:
             if self.status == cfg.CANDIDATE:
                 self.status = cfg.FOLLOWER
             elif self.status == cfg.LEADER:
-                self.status =cfg.FOLLOWER
+                self.status = cfg.FOLLOWER
                 self.init_timeout()
 
             if self.term < term:
