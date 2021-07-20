@@ -6,15 +6,15 @@ from store import Store
 from log import Logging
 
 class Election:
-    def __init__(self, transport: Transport):
+    def __init__(self, transport: Transport, store: Store):
         self.timeout_thread = None
         self.status = cfg.FOLLOWER
         self.term = 0
         self.vote_count = 0
-        self.store = Store()
+        self.store = store
         self.election_logger = Logging('INFO', 'election.log').get_logger()
         self.__transport = transport
-        self.init_timeout()
+        # self.init_timeout()
 
     def start_election(self):
         self.election_logger.info('starting election')

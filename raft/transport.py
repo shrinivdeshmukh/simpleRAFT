@@ -8,7 +8,7 @@ import config as cfg
 
 class Transport:
 
-    def __init__(self, my_ip: str, timeout: int = 1):
+    def __init__(self, my_ip: str, timeout: int):
         self.host, self.port = my_ip.split(':')
         self.port = int(self.port)
         self.addr = my_ip
@@ -53,9 +53,9 @@ class Transport:
                         reply = self.election.handle_put(msg)
                         put_response.update({'success': reply})
                         client.send(self.encode_json(put_response))
-                    elif self.election.status == cfg.CANDIDATE:
-                        reply = self.encode_json(
-                            {'type': 'put', 'success': False, 'message': 'Cluster unavailable, please try again in sometime'})
+                    # elif self.election.status == cfg.CANDIDATE:
+                    #     reply = self.encode_json(
+                    #         {'type': 'put', 'success': False, 'message': 'Cluster unavailable, please try again in sometime'})
                     else:
                         reply = self.redirect_to_leader(self.encode_json(msg))
                         client.send(bytes(reply, encoding='utf-8'))
@@ -63,6 +63,8 @@ class Transport:
                     if self.election.status == cfg.LEADER:
                         get_response = {'type': 'get'}
                         reply = self.election.handle_get(msg)
+                        if not reply:
+                            reply = None
                         get_response.update({'data': reply})
                         client.send(self.encode_json(get_response))
                     else:
@@ -137,6 +139,11 @@ class Transport:
                 client.close()
                 time.sleep(0.02)
                 del client
+            except TimeoutError as e:
+                self.ping_logger.info(f'Timeout error connecting to peer {addr}')
+                self.ping_logger.info(f'Removing peer {addr} from list of peers')
+                with self.lock:
+                    self.peers.remove(addr)
             except Exception as e:
                 raise e
             finally:
@@ -144,7 +151,7 @@ class Transport:
         else:
             return False
 
-    def ping(self, timeout: int = 0.02):
+    def ping(self, timeout: int):
         while True:
             if self.peers:
                 self.ping_logger.debug(f'peers >>> {self.peers}')
@@ -157,8 +164,6 @@ class Transport:
     def echo(self, peer):
         client = self.reconnect(peer)
         if not client:
-            with self.lock:
-                self.peers.remove(peer)
             return
         echo_msg = self.encode_json({'type': 'ping'})
         client.send(echo_msg)
@@ -208,8 +213,8 @@ class Transport:
         if isinstance(msg, str):
             try:
                 return loads(msg)
-            except JSONDecodeError:
-                raise TypeError('JSON format incorrect {}'.format(msg))
+            except JSONDecodeError as e:
+                raise TypeError('JSON format incorrect {}'.format(msg)) from e
             except Exception as e:
                 raise e
         return msg
