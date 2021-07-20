@@ -5,9 +5,10 @@ import time
 from log import Logging
 import config as cfg
 
+
 class Transport:
 
-    def __init__(self, my_ip: str, timeout: int=10):
+    def __init__(self, my_ip: str, timeout: int = 10):
         self.host, self.port = my_ip.split(':')
         self.port = int(self.port)
         self.addr = my_ip
@@ -31,13 +32,18 @@ class Transport:
                     all_peers = self.peers.copy()
                     msg.update({'sender': self.addr})
                     self.add_peer(msg)
-                    client.send(self.encode_json({'type': 'add_peer', 'payload': all_peers}))
+                    client.send(self.encode_json(
+                        {'type': 'add_peer', 'payload': all_peers}))
                 elif msg_type == 'heartbeat':
-                    term, commit_id = self.election.heartbeat_handler(message=msg)
-                    client.send(self.encode_json({'type': 'heartbeat','term': term, 'commit_id': commit_id}))
+                    term, commit_id = self.election.heartbeat_handler(
+                        message=msg)
+                    client.send(self.encode_json(
+                        {'type': 'heartbeat', 'term': term, 'commit_id': commit_id}))
                 elif msg_type == 'vote_request':
-                    choice, term = self.election.decide_vote(msg['term'], msg['commit_id'], msg['staged'])
-                    client.send(self.encode_json({'type': 'vote_request', 'term': term, 'choice': choice}))
+                    choice, term = self.election.decide_vote(
+                        msg['term'], msg['commit_id'], msg['staged'])
+                    client.send(self.encode_json(
+                        {'type': 'vote_request', 'term': term, 'choice': choice}))
                 elif msg_type == 'ping':
                     msg.update({'is_alive': True, 'addr': self.addr})
                     client.send(self.encode_json(msg))
@@ -47,6 +53,9 @@ class Transport:
                         reply = self.election.handle_put(msg)
                         put_response.update({'success': reply})
                         client.send(self.encode_json(put_response))
+                    elif self.election.status == cfg.CANDIDATE:
+                        reply = self.encode_json(
+                            {'type': 'put', 'success': False, 'message': 'Cluster unavailable, please try again in sometime'})
                     else:
                         reply = self.redirect_to_leader(self.encode_json(msg))
                         client.send(bytes(reply, encoding='utf-8'))
@@ -62,7 +71,8 @@ class Transport:
 
                 elif msg_type == 'data':
                     term, commit_id = self.election.heartbeat_handler(msg)
-                    client.send(self.encode_json({'type': 'data', 'term': term, 'commit_id': commit_id}))
+                    client.send(self.encode_json(
+                        {'type': 'data', 'term': term, 'commit_id': commit_id}))
             else:
                 send_msg = 'hey there; from {}'.format(self.addr)
                 client.send(bytes(self.addr, encoding='utf-8'))
@@ -100,13 +110,13 @@ class Transport:
                     self.peers.append(peer)
         self.peers = list(set(self.peers))
 
-    def add_peer(self, message, leader = False):
+    def add_peer(self, message, leader=False):
         try:
             reciever_address = message['sender']
             new_peer = message['payload']
             if new_peer not in self.peers:
                 with self.lock:
-                   self.peers.append(new_peer)
+                    self.peers.append(new_peer)
             if self.election.status == cfg.LEADER:
                 self.election.start_heartbeat()
         except Exception as e:
@@ -131,7 +141,7 @@ class Transport:
         else:
             return False
 
-    def ping(self, timeout: int=30):
+    def ping(self, timeout: int = 30):
         while True:
             if self.peers:
                 self.ping_logger.info(f'peers >>> {self.peers}')
@@ -157,7 +167,7 @@ class Transport:
                 return True
         return False
 
-    def heartbeat(self, peer: str, message: dict=None):
+    def heartbeat(self, peer: str, message: dict = None):
         client = self.reconnect(peer)
         message.update({'type': 'heartbeat'})
         heartbeat_message = self.encode_json(message)
@@ -166,10 +176,10 @@ class Transport:
         client.close()
         return heartbeat_reply
 
-    def vote_request(self, peer: str, message: dict=None):
+    def vote_request(self, peer: str, message: dict = None):
         client = self.reconnect(peer)
         if not client:
-            return 
+            return
         message.update({'type': 'vote_request'})
         vote_request_message = self.encode_json(message)
         client.send(vote_request_message)
@@ -177,7 +187,7 @@ class Transport:
         client.close()
         return vote_reply
 
-    def send_data(self, peer=None, message: dict=None):
+    def send_data(self, peer=None, message: dict = None):
         client = self.reconnect(peer)
         message.update({'type': 'data'})
         data_message = self.encode_json(message)
