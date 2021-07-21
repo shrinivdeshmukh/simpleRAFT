@@ -35,7 +35,7 @@ if __name__ == '__main__':
     store_type = args.type
     database = args.database
     data_dir = args.dir
-    timeout = args.timeout
+    timeout = float(args.timeout)
     # try:
     #     peers = (sys.argv[2]).split(',')
     #     store_type = sys.argv[3]
