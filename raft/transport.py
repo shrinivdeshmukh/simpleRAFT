@@ -139,7 +139,7 @@ class Transport:
                 return client
             except ConnectionRefusedError:
                 client.close()
-                time.sleep(0.02)
+                time.sleep(0.002)
                 del client
             except TimeoutError as e:
                 self.ping_logger.info(f'Timeout error connecting to peer {addr}')
